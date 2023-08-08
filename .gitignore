@@ -1,23 +1,17 @@
-# IGNORE EVERYTHING
-*
 
 # IGNORE SUBFLDERS TOO
-!*/
+
 .idea/*
 .idea
 
-# EXCEPT THIS FOLDERS
+build
+build/*
 
-!.gitignore
+simbuild
+simbuild/*
 
-!meyer-heavy.txt
+TOSSIM.py
+TOSSIM.pyc
+_TOSSIMmodule.so
 
-!RadioRoute.h
-!RadioRouteC.nc
-!RadioRouteAppC.nc
 
-!RunSimulationScript.py
-
-!topology.txt
-
-!README.md
