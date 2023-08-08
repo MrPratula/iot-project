@@ -1,4 +1,0 @@
-COMPONENT=RadioRouteAppC
-
-include $(MAKERULES)
-
