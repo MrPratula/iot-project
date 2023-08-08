@@ -57,64 +57,82 @@ implementation {
   bool generate_send (uint16_t address, message_t* packet, uint8_t type);
   
   uint16_t random;
+  uint16_t token;
   
+
   
-  
-  
-  
+  typedef struct sent {
+  	
+  	bool lock;
+	uint16_t src;
+	uint16_t dst;
+	uint16_t sender;
+	uint16_t next_hop;
+	uint16_t token;
+	uint16_t id;
+	uint16_t retrasmission;
+	
+	uint16_t type;
+	uint16_t data;
+
+  	} Box;
+  	
+  	Box sent[32];
+
   
   bool generate_send (uint16_t address, message_t* packet, uint8_t type){
-  /*
-  * 
-  * Function to be used when performing the send after the receive message event.
-  * It store the packet and address into a global variable and start the timer execution to schedule the send.
-  * It allow the sending of only one message for each REQ and REP type
-  * @Input:
-  *		address: packet destination address
-  *		packet: full packet to be sent (Not only Payload)
-  *		type: payload message type
-  *
-  * MANDATORY: DO NOT MODIFY THIS FUNCTION
-  */
+  
+  
+  	dbg("dbg", "generate send IN \n");	
+  	
+
   	if (call Timer0.isRunning()){
+  		dbg("dbg", "generate send OUT \n\n");
   		return FALSE;
   	}else{
-  	if (type == 1 && !route_req_sent ){	//route request
-  		route_req_sent = TRUE;
-  		call Timer0.startOneShot( time_delays[TOS_NODE_ID-1] );
-  		queued_packet = *packet;
-  		queue_addr = address;
-  	}else if (type == 2 && !route_rep_sent){ //route reply
-  	  	route_rep_sent = TRUE;
-  		call Timer0.startOneShot( time_delays[TOS_NODE_ID-1] );
-  		queued_packet = *packet;
-  		queue_addr = address;
-  	}else if (type == 0){	//data
-  		call Timer0.startOneShot( time_delays[TOS_NODE_ID-1] );
-  		queued_packet = *packet;
-  		queue_addr = address;	
+	  	if (type == 0){	//data
+	  		
+	  		call Timer0.startOneShot( time_delays[TOS_NODE_ID-1]  );
+	  		queued_packet = *packet;
+	  		queue_addr = address;
+	  	}else if (type == 1){ //ack
+	  		call Timer0.startOneShot( time_delays[TOS_NODE_ID-1]  );
+	  		queued_packet = *packet;
+	  		queue_addr = address;
+	  	}
   	}
-  	}
+  	dbg("dbg", "generate send OUT \n\n");
   	return TRUE;
   }
   
+  
+  
   event void Timer0.fired() {
-  	/*
-  	* Timer triggered to perform the send.
-  	* MANDATORY: DO NOT MODIFY THIS FUNCTION
-  	*/
   	actual_send (queue_addr, &queued_packet);
   }
   
   
   
   
-  bool actual_send (uint16_t address, message_t* packet){
+	bool actual_send (uint16_t address, message_t* packet){
+		
+		dbg("dbg", "actual send IN\n");	
 	
-	
-	  dbg("boot","actual send fired at node %d.\n", TOS_NODE_ID);
-	
-	 
+	  if (locked) {
+	  		dbg("dbg", "actual send OUT bad\n\n");
+            return FALSE;
+        }
+        else {
+            if (call AMSend.send(address, packet, sizeof(radio_route_msg_t)) == SUCCESS) {
+                dbg("radio_send", "Sending packet");	
+                locked = TRUE;
+                dbg_clear("radio_send", " at time %s \n", sim_time_string());
+                dbg("dbg", "actual send OUT ok\n\n");
+                return TRUE;
+            }
+   
+        }
+
   }
   
   
@@ -122,7 +140,7 @@ implementation {
     dbg("boot","Application booted.\n");
     dbg("boot","started node %d.\n", TOS_NODE_ID);
     
-    call AMControl.start();	//componente ActiveMessageC cominciato
+    call AMControl.start();
     
   }
   
@@ -132,9 +150,16 @@ implementation {
 
   event void AMControl.startDone(error_t err) {
 	
+	uint8_t i;
 	
     if (err == SUCCESS) {
       dbg("radio","Radio on on node %d!\n", TOS_NODE_ID);
+      
+      token = 0;
+      
+      for(i=0; i<=31; i++){
+      	sent[i].lock = FALSE;
+      }
       
       switch(TOS_NODE_ID) {
 			
@@ -171,14 +196,64 @@ implementation {
 	dbg("boot", "timer1\n");
   }
 
+
+
+
+
+
   event message_t* Receive.receive(message_t* bufPtr, void* payload, uint8_t len) {
 	
-	dbg("boot", "receive.receive\n");
+	
+	
+	uint16_t data;
+	uint16_t type;
+	
+	radio_route_msg_t* rcm;
+	
+	dbg("dbg", "receive IN\n");
+	
+		if (len != sizeof(radio_route_msg_t)) {
+			return bufPtr;
+		}
+		
+		else{
+		
+			rcm = (radio_route_msg_t*) payload;
+			data = rcm->data;
+			type = rcm->type;
+			
+			switch(type) {
+			
+				case 0: // humidity
+					dbg("radio_rec", "umidità = %d%\n", data);
+					break;
+				case 1: // pressure
+					dbg("radio_rec", "pressione = %dhPa\n", data);
+					break;
+		
+				case 2: // temperature
+					dbg("radio_rec", "temperatura = %d°C\n", data);
+					break;
+			}
+			
+		}
+		
+		dbg("dbg", "receive OUT\n\n");
     
   }
 
+
+
+
+
+
+
   event void AMSend.sendDone(message_t* bufPtr, error_t error) {
-		dbg("boot", "send done\n");
+		if (&queued_packet == bufPtr) {
+		    locked = FALSE;
+		    dbg("radio_send", "Packet sent...");
+		    dbg_clear("radio_send", " at time %s \n", sim_time_string()); 
+		}
     }
 
 
@@ -192,40 +267,81 @@ implementation {
 	
 	event void Timer3.fired() {
 		
+		
+		
+		uint8_t i;
 		uint8_t topic;
 		int16_t value;
 		
+		radio_route_msg_t* rcm;
+		
+		dbg("dbg", "time3 fired IN\n");
+		
+		// generiamo dato casuale
 		
 		random = call Random.rand16();
 		// dbg("boot", "numero a caso = %d\n", random);
 		
 		topic = random % 3;
-		dbg("boot", "numero a caso = %d\n", random);
-		dbg("boot", "topic = %d\n", topic);
+		dbg("random_gen", "numero a caso = %d\n", random);
+		dbg("random_gen", "topic = %d\n", topic);
+		
 		
 		
 		switch(topic){
 		
-		case 0: // humidity
-			value = (random*100)/65535;
-			dbg("boot", "umidità = %d%\n", value);
-			break;
+			case 0: // humidity
+				value = (random*100)/65535;
+				dbg("random_gen", "umidità = %d%\n", value);
+				break;
 		
-		case 1: // pressure
-			value = 1010 + random/10000;
-			dbg("boot", "pressione = %dhPa\n", value);
-			break;
+			case 1: // pressure
+				value = 1010 + random/10000;
+				dbg("random_gen", "pressione = %dhPa\n", value);
+				break;
 		
-		case 2: // temperature
+			case 2: // temperature
 		
-			value = (random*100)/65535;
-			value = value/2 -10;
-			dbg("boot", "temperatura = %dC\n", value);
-			break;
+				value = (random*100)/65535;
+				value = value/2 -10;
+				dbg("random_gen", "temperatura = %dC\n", value);
+				break;
 			
 		}
 		
-		dbg("boot", "\n");
+		dbg("random_gen", "\n");
+		
+		// prepariamo il pacchetto da mandare
+		
+		rcm = (radio_route_msg_t*) call Packet.getPayload(&packet, sizeof(radio_route_msg_t));
+		
+		rcm->src = TOS_NODE_ID;
+		rcm->dst = 8;
+		rcm->sender = TOS_NODE_ID;
+		rcm->token = token;
+		rcm->retrasmission = 0;
+		rcm->type = topic;
+		rcm->data = value;
+		
+		for(i=0; i<=31; i++){
+      		if (sent[i].lock == FALSE) {
+      			sent[i].lock = TRUE;
+      			sent[i].src = TOS_NODE_ID;
+      			sent[i].dst = 8;
+      			sent[i].sender = TOS_NODE_ID;
+      			sent[i].token = token;
+      			sent[i].retrasmission = 0;
+      			sent[i].type = topic;
+      			sent[i].data = value;
+      			break;
+      		}
+      	}
+      	
+      	token++;
+		
+		generate_send(AM_BROADCAST_ADDR, &packet, 0);
+		
+		dbg("dbg", "time3 fired OUT\n\n");
 		
 	}
 

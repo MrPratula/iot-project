@@ -112,6 +112,12 @@ print "Activate debug message on channel radio_pack"
 t.addChannel("radio_pack",out);
 
 
+print "Activate debug message on channel random_gen"
+t.addChannel("random_gen",out);
+
+print "Activate debug message on channel dbg function"
+t.addChannel("dbg",out);
+
 
 nodes = [i for i in range(1, 8+1)]
 
