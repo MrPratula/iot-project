@@ -1,0 +1,21 @@
+# IGNORE EVERYTHING
+*
+
+# IGNORE SUBFLDERS TOO
+!*/
+
+# EXCEPT THIS FOLDERS
+
+!.gitignore
+
+!meyer-heavy.txt
+
+!RadioRoute.h
+!RadioRouteC.nc
+!RadioRouteAppC.nc
+
+!RunSimulationScript.py
+
+!topology.txt
+
+
