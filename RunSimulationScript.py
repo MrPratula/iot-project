@@ -25,13 +25,9 @@ t = Tossim([]);
 
 
 
-
-
 topofile="topology.txt";
 
 modelfile="meyer-heavy.txt";
-
-
 
 
 
@@ -72,43 +68,33 @@ out = sys.stdout;
 #Add debug channel
 
 print "Activate debug message on channel init"
-
 t.addChannel("init",out);
 
 print "Activate debug message on channel boot"
-
 t.addChannel("boot",out);
 
 print "Activate debug message on channel timer"
-
 t.addChannel("timer",out);
 
 print "Activate debug message on channel led_0"
-
 t.addChannel("led_0",out);
 
 print "Activate debug message on channel led_1"
-
 t.addChannel("led_1",out);
 
 print "Activate debug message on channel led_2"
-
 t.addChannel("led_2",out);
 
 print "Activate debug message on channel radio"
-
 t.addChannel("radio",out);
 
 print "Activate debug message on channel radio_send"
-
 t.addChannel("radio_send",out);
 
 print "Activate debug message on channel radio_rec"
-
 t.addChannel("radio_rec",out);
 
 print "Activate debug message on channel radio_pack"
-
 t.addChannel("radio_pack",out);
 
 
@@ -122,12 +108,7 @@ t.addChannel("dbg",out);
 nodes = [i for i in range(1, 8+1)]
 
 
-
-
-
 for node in nodes:
-
-    
 
     print('Creating node ', node)
 
@@ -145,13 +126,13 @@ lines = f.readlines()
 
 for line in lines:
 
-  s = line.split()
+    s = line.split()
 
-  if (len(s) > 0):
+    if (len(s) > 0):
 
-    print ">>>Setting radio channel from node ", s[0], " to node ", s[1], " with gain ", s[2], " dBm"
+        print ">>>Setting radio channel from node ", s[0], " to node ", s[1], " with gain ", s[2], " dBm"
 
-    radio.add(int(s[0]), int(s[1]), float(s[2]))
+        radio.add(int(s[0]), int(s[1]), float(s[2]))
 
 
 
@@ -216,11 +197,9 @@ print "Start simulation with TOSSIM! \n\n\n";
 
 
 for i in range(0,1200):
-
-	t.runNextEvent()
+    t.runNextEvent()
 
 	
 
 print "\n\n\nSimulation finished!";
-
 
