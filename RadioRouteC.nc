@@ -65,7 +65,7 @@ implementation {
         uint16_t next_hop;
         uint16_t token;
         uint16_t id;
-        uint16_t retrasmission;
+        uint16_t rtx;
 
         uint16_t type;
         uint16_t data;
@@ -86,21 +86,22 @@ implementation {
 
 
         if (call Timer0.isRunning()){
-            dbg("dbg", "generate send OUT \n\n");
+            dbg("dbg", "BAD generate send OUT cuz timer0 is running \n\n");
             return FALSE;
         }else{
-            if (type == 0){	//data
-
-                call Timer0.startOneShot( time_delays[TOS_NODE_ID-1]  );
-                queued_packet = *packet;
+            if (type == 0){		//data
+            	queued_packet = *packet;
                 queue_addr = address;
-            }else if (type == 1){ //ack
                 call Timer0.startOneShot( time_delays[TOS_NODE_ID-1]  );
-                queued_packet = *packet;
+                
+            }else if (type == 1){ 		//ack
+            	queued_packet = *packet;
                 queue_addr = address;
+                call Timer0.startOneShot( time_delays[TOS_NODE_ID-1]  );
+                
             }
         }
-        dbg("dbg", "generate send OUT \n\n");
+        dbg("dbg", "generate send OUT OK\n\n");
         return TRUE;
     }
   
@@ -123,7 +124,7 @@ implementation {
         dbg("dbg", "actual send IN\n");
 
         if (locked) {
-            dbg("dbg", "actual send OUT bad\n\n");
+            dbg("dbg", "BAD actual send OUT cuz locked\n\n");
             return FALSE;
         }
         else {
@@ -139,6 +140,26 @@ implementation {
 
     }
   
+
+
+
+
+
+
+	event void AMSend.sendDone(message_t* bufPtr, error_t error) {
+	    if (&queued_packet == bufPtr) {
+	        locked = FALSE;
+	        dbg("radio_send", "Packet sent...");
+	        dbg_clear("radio_send", " at time %s \n", sim_time_string());
+	    }
+	    else {
+	    	dbg("dbg", "SUPER BAD in send done");
+	    }
+	}
+
+
+
+
 
 
 
@@ -166,18 +187,22 @@ implementation {
             for(i=0; i<=31; i++){
                 sent[i].lock = FALSE;
             }
-
-            switch(TOS_NODE_ID) {
-                case 1:
-                case 2:
-                case 3:
-                case 4:
-                case 5:
-                    call Timer3.startPeriodic(TOS_NODE_ID * 1000);
-                    break;
-            }
-
-
+			
+			if(TOS_NODE_ID == 2){
+			
+				call Timer3.startPeriodic(time_delays[TOS_NODE_ID-1]);
+			
+			}
+			
+			if(TOS_NODE_ID == 5){
+			
+				call Timer3.startOneShot(time_delays[TOS_NODE_ID-1]);
+			
+			}
+			
+			
+			
+			
 
         }
         else {
@@ -211,7 +236,7 @@ implementation {
 
 
     event message_t* Receive.receive(message_t* bufPtr, void* payload, uint8_t len) {
-
+    
     uint16_t data;
     uint16_t type;
 
@@ -244,23 +269,10 @@ implementation {
             }
 
         }
-
+        
         dbg("dbg", "receive OUT\n\n");
+        return bufPtr;
 
-    }
-
-
-
-
-
-
-
-    event void AMSend.sendDone(message_t* bufPtr, error_t error) {
-        if (&queued_packet == bufPtr) {
-            locked = FALSE;
-            dbg("radio_send", "Packet sent...");
-            dbg_clear("radio_send", " at time %s \n", sim_time_string());
-        }
     }
 
 
@@ -299,7 +311,6 @@ implementation {
 		dbg("random_gen", "topic = %d\n", topic);
 		
 		
-		
 		switch(topic){
 		
 			case 0: // humidity
@@ -326,12 +337,12 @@ implementation {
 		// prepariamo il pacchetto da mandare
 		
 		rcm = (radio_route_msg_t*) call Packet.getPayload(&packet, sizeof(radio_route_msg_t));
-		
+	
 		rcm->src = TOS_NODE_ID;
 		rcm->dst = 8;
 		rcm->sender = TOS_NODE_ID;
 		rcm->token = token;
-		rcm->retrasmission = 0;
+		rcm->rtx = 0;
 		rcm->type = topic;
 		rcm->data = value;
 		
@@ -342,14 +353,16 @@ implementation {
       			sent[i].dst = 8;
       			sent[i].sender = TOS_NODE_ID;
       			sent[i].token = token;
-      			sent[i].retrasmission = 0;
+      			sent[i].rtx = 0;
       			sent[i].type = topic;
       			sent[i].data = value;
+      			dbg("dbg", "I=%d\n", i);
       			break;
       		}
       	}
       	
       	token++;
+
 		
 		generate_send(AM_BROADCAST_ADDR, &packet, 0);
 		
