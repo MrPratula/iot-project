@@ -76,8 +76,8 @@ t.addChannel("boot",out);
 print "Activate debug message on channel timer"
 t.addChannel("timer",out);
 
-print "Activate debug message on channel led_0"
-t.addChannel("led_0",out);
+print "Activate debug message on channel ack timeout expired"
+t.addChannel("rto",out);
 
 print "Activate debug message on channel led_1"
 t.addChannel("led_1",out);
@@ -89,7 +89,7 @@ print "Activate debug message on channel radio"
 t.addChannel("radio",out);
 
 print "Activate debug message on channel radio_send"
-t.addChannel("radio_send",out);
+# t.addChannel("radio_send",out);
 
 print "Activate debug message on channel radio_rec"
 t.addChannel("radio_rec",out);
@@ -102,7 +102,10 @@ print "Activate debug message on channel random_gen"
 t.addChannel("random_gen",out);
 
 print "Activate debug message on channel dbg function"
-t.addChannel("dbg",out);
+# t.addChannel("dbg",out);
+
+print "Activate debug message on channel error"
+t.addChannel("error",out);
 
 
 nodes = [i for i in range(1, 8+1)]
@@ -196,7 +199,7 @@ print "Start simulation with TOSSIM! \n\n\n";
 
 
 
-for i in range(0,12000):
+for i in range(0,2400):
     t.runNextEvent()
 
 	
