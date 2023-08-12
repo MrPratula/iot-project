@@ -1,12 +1,12 @@
 
-//#define NEW_PRINTF_SEMANTICS
+#define NEW_PRINTF_SEMANTICS
 #include "RadioRoute.h"
-//#include "printf.h"
 
 
 // add this in makefile
 //CFLAGS += -I$(TOSDIR)/lib/printf
 //CFLAGS += -DNEW_PRINTF_SEMANTICS
+
 
 configuration RadioRouteAppC {
 }
@@ -31,8 +31,8 @@ implementation {
     components new AMReceiverC(AM_RADIO_COUNT_MSG);
     components ActiveMessageC;
     
-    //components SerialPrintfC;
-    //components SerialStartC;
+    components SerialPrintfC;
+    components SerialStartC;
 
 
     /****** INTERFACES *****/

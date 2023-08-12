@@ -2,7 +2,7 @@
  
 #include "Timer.h"
 #include "RadioRoute.h"
-//#include "printf.h"	
+#include "printf.h"	
 
 
 module RadioRouteC @safe() {
@@ -51,7 +51,7 @@ implementation {
     bool actual_send (uint16_t address, message_t* packet);
     bool generate_send (uint16_t address, message_t* packet, uint8_t type);
 
-    uint16_t random;
+    
     uint16_t token;
   
 
@@ -279,6 +279,12 @@ implementation {
 				
 				tkn = rcm->token;
 			    type = rcm->type;
+			    dst = rcm->dst;
+			    
+			    // message not for me (node are in range)
+			    if(dst != TOS_NODE_ID){
+			    	break;
+			    }
 			    
 				dbg("radio_rec", "node received ACK with token = %d\n", tkn);
 				
@@ -420,8 +426,10 @@ implementation {
 					generate_send(AM_BROADCAST_ADDR, &packet, 1);
 						
 					// upload stuff
-					//printf("type=%u;data=%d", type, data);
-    				//printfflush();
+				
+					printf("from=%u;to=%u;type=%u;data=%u\n", sender, TOS_NODE_ID, type, data);
+					
+    				printfflush();
 
 	    			
 						
@@ -464,6 +472,7 @@ implementation {
 		uint8_t i;
 		uint8_t topic;
 		int16_t value;
+		uint16_t random;
 		
 		radio_route_msg_t* rcm;
 		
@@ -474,15 +483,23 @@ implementation {
 		random = call Random.rand16();
 		
 		topic = random % 3;
+		
 		//dbg("random_gen", "numero a caso = %d\n", random);
 		//dbg("random_gen", "topic = %d\n", topic);
+		
+		
+		if(random<0){
+			random = -random;
+		}
+		
+		
 		
 		dbg("random_gen", "node %d has generate \t", TOS_NODE_ID);
 		
 		switch(topic){
 		
 			case 0: // humidity
-				value = (random*100)/65535;
+				value = random % 100;
 				dbg_clear("random_gen", "humidity = %d%", value);
 				break;
 		
@@ -493,8 +510,7 @@ implementation {
 		
 			case 2: // temperature
 		
-				value = (random*100)/65535;
-				value = value/2 -10;
+				value = random % 40;
 				dbg_clear("random_gen", "temprature = %d°C", value);
 				break;
 			
