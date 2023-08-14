@@ -427,8 +427,7 @@ implementation {
 						
 					// upload stuff
 				
-					printf("from=%u;to=%u;type=%u;data=%u\n", sender, TOS_NODE_ID, type, data);
-					
+					printf("%u;%u;%u;%u\n", sender, TOS_NODE_ID, type, data);
     				printfflush();
 
 	    			
